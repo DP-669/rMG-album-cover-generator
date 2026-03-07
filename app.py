@@ -184,21 +184,78 @@ def resize_cover(img, size):
     return canvas
 
 def get_font(name, size):
+    # Map Mac font names to Linux equivalents (for Streamlit Cloud / Linux deployment)
+    LINUX_FONT_MAP = {
+        "Helvetica":          ["/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Arial":              ["/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Avenir":             ["/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Futura":             ["/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Gill Sans":          ["/usr/share/fonts/truetype/google-fonts/Poppins-Regular.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSans.ttf"],
+        "Optima":             ["/usr/share/fonts/truetype/google-fonts/Poppins-Light.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSans.ttf"],
+        "Bodoni 72":          ["/usr/share/fonts/truetype/google-fonts/Lora-Variable.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "Didot":              ["/usr/share/fonts/truetype/google-fonts/Lora-Variable.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "Baskerville":        ["/usr/share/fonts/truetype/baskerville/GFSBaskerville.otf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "Georgia":            ["/usr/share/fonts/truetype/crosextra/Caladea-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "Palatino":           ["/usr/share/fonts/truetype/crosextra/Caladea-Regular.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"],
+        "Times New Roman":    ["/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "Impact":             ["/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+                               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"],
+        "Copperplate":        ["/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Rockwell":           ["/usr/share/fonts/truetype/crosextra/Caladea-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"],
+        "American Typewriter": ["/usr/share/fonts/truetype/crosextra/Carlito-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"],
+        "Phosphate":          ["/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Gurmukhi MN":        ["/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"],
+        "Trattatello":        ["/usr/share/fonts/truetype/google-fonts/Lora-Italic-Variable.ttf",
+                               "/usr/share/fonts/truetype/freefont/FreeSerifItalic.ttf"],
+        "Papyrus":            ["/usr/share/fonts/truetype/freefont/FreeSans.ttf"],
+    }
+
+    # Also check for bundled fonts in assets/fonts/ (for custom fonts in the repo)
+    assets_fonts = Path(__file__).parent / "assets" / "fonts"
+
     candidates = [
+        # Mac system fonts
         f"/System/Library/Fonts/{name}.ttc",
         f"/System/Library/Fonts/{name}.ttf",
         f"/Library/Fonts/{name}.ttf",
         f"/Library/Fonts/{name} Regular.ttf",
         f"/System/Library/Fonts/Supplemental/{name}.ttf",
         f"/System/Library/Fonts/Supplemental/{name}.ttc",
+        # Bundled fonts in repo
+        str(assets_fonts / f"{name}.ttf"),
+        str(assets_fonts / f"{name}.otf"),
+    ]
+    # Add Linux mapped fonts
+    candidates.extend(LINUX_FONT_MAP.get(name, []))
+    # Final fallbacks
+    candidates.extend([
         "/System/Library/Fonts/Helvetica.ttc",
         "/System/Library/Fonts/Arial.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ]
+    ])
+
     for p in candidates:
         if os.path.exists(p):
-            try: return ImageFont.truetype(p, size)
-            except Exception: continue
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                continue
     return ImageFont.load_default()
 
 def draw_text_spaced(draw, pos, text, font, fill, spacing=0, anchor="mm"):
