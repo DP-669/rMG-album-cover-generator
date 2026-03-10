@@ -51,11 +51,32 @@ CATALOGS = {
 OUTPUT_SIZES = [3000, 1500, 1000, 500]
 
 FONT_OPTIONS = [
-    "Helvetica", "Arial", "Avenir", "Futura", "Gill Sans", "Optima",
-    "Bodoni 72", "Didot", "Baskerville", "Georgia", "Palatino", "Times New Roman",
-    "Impact", "Copperplate", "Rockwell", "American Typewriter",
-    "Phosphate", "Gurmukhi MN", "Trattatello", "Papyrus",
+    "Inter", "Cabin", "Jost", "Nunito",
+    "LibreBodoni", "LibreBaskerville", "Lora", "CrimsonText", "GFSDidot",
+    "Anton", "Cinzel", "Oswald",
+    "Arvo", "CourierPrime",
+    "Paprika", "TiroGurmukhi",
 ]
+
+# Mapping from font name to bundled file(s): (Regular, Bold)
+FONT_FILES = {
+    "Inter":            ("Inter-Regular.ttf",            "Inter-Bold.ttf"),
+    "Cabin":            ("Cabin-Regular.ttf",             "Cabin-Bold.ttf"),
+    "Jost":             ("Jost-Regular.ttf",              "Jost-Bold.ttf"),
+    "Nunito":           ("Nunito-Regular.ttf",            "Nunito-Bold.ttf"),
+    "LibreBodoni":      ("LibreBodoni-Regular.ttf",       "LibreBodoni-Bold.ttf"),
+    "LibreBaskerville": ("LibreBaskerville-Regular.ttf",  "LibreBaskerville-Bold.ttf"),
+    "Lora":             ("Lora-Regular.ttf",              "Lora-Bold.ttf"),
+    "CrimsonText":      ("CrimsonText-Regular.ttf",       "CrimsonText-Regular.ttf"),
+    "GFSDidot":         ("GFSDidot-Regular.ttf",          "GFSDidot-Regular.ttf"),
+    "Anton":            ("Anton-Regular.ttf",             "Anton-Regular.ttf"),
+    "Cinzel":           ("Cinzel-Regular.ttf",            "Cinzel-Bold.ttf"),
+    "Oswald":           ("Oswald-Regular.ttf",            "Oswald-Bold.ttf"),
+    "Arvo":             ("Arvo-Regular.ttf",              "Arvo-Bold.ttf"),
+    "CourierPrime":     ("CourierPrime-Regular.ttf",      "CourierPrime-Regular.ttf"),
+    "Paprika":          ("Paprika-Regular.ttf",           "Paprika-Regular.ttf"),
+    "TiroGurmukhi":     ("TiroGurmukhi-Regular.ttf",      "TiroGurmukhi-Regular.ttf"),
+}
 
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -183,22 +204,37 @@ def resize_cover(img, size):
     canvas.paste(resized.crop((x, y, x + size, y + size)), (0, 0))
     return canvas
 
-def get_font(name, size):
-    candidates = [
+def get_font(name, size, bold=False):
+    # 1. Try bundled assets/fonts directory (works on Streamlit Cloud + Mac)
+    fonts_dir = Path(__file__).parent / "assets" / "fonts"
+    if name in FONT_FILES:
+        fname = FONT_FILES[name][1] if bold else FONT_FILES[name][0]
+        bundled = fonts_dir / fname
+        if bundled.exists():
+            try: return ImageFont.truetype(str(bundled), size)
+            except Exception: pass
+    # Try any matching file in assets/fonts by prefix
+    if fonts_dir.exists():
+        for candidate in fonts_dir.glob(f"{name}*.ttf"):
+            try: return ImageFont.truetype(str(candidate), size)
+            except Exception: continue
+
+    # 2. Fallback: Mac system fonts (local dev without bundled fonts)
+    system_candidates = [
         f"/System/Library/Fonts/{name}.ttc",
         f"/System/Library/Fonts/{name}.ttf",
         f"/Library/Fonts/{name}.ttf",
-        f"/Library/Fonts/{name} Regular.ttf",
         f"/System/Library/Fonts/Supplemental/{name}.ttf",
         f"/System/Library/Fonts/Supplemental/{name}.ttc",
         "/System/Library/Fonts/Helvetica.ttc",
-        "/System/Library/Fonts/Arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     ]
-    for p in candidates:
+    for p in system_candidates:
         if os.path.exists(p):
             try: return ImageFont.truetype(p, size)
             except Exception: continue
+
+    # 3. Last resort
     return ImageFont.load_default()
 
 def draw_text_spaced(draw, pos, text, font, fill, spacing=0, anchor="mm"):
@@ -277,11 +313,11 @@ MOOD/DESCRIPTION: {description}
 
 Study the hero image carefully. Then study the MOOD/DESCRIPTION carefully.
 Your font and sizing choices MUST reflect the mood described:
-- Playful/light moods → rounder, lighter fonts (Gill Sans, Avenir, Optima)
-- Dark/intense moods → heavy, bold fonts (Impact, Bodoni 72, Copperplate)
-- Elegant/sophisticated → serif fonts (Didot, Baskerville, Palatino)
-- Retro/vintage → character fonts (American Typewriter, Rockwell)
-- Experimental/edgy → distinctive fonts (Phosphate, Gurmukhi MN, Futura)
+- Playful/light moods → rounder, lighter fonts (Cabin, Nunito, Jost)
+- Dark/intense moods → heavy, bold fonts (Anton, Oswald, Cinzel)
+- Elegant/sophisticated → serif fonts (LibreBodoni, LibreBaskerville, Lora)
+- Retro/vintage → character fonts (CourierPrime, Arvo, CrimsonText)
+- Experimental/edgy → distinctive fonts (Paprika, TiroGurmukhi, GFSDidot)
 
 Respond ONLY with valid JSON (no markdown, no backticks):
 {{
@@ -319,16 +355,16 @@ Layout rules:
         return json.loads(raw)
     except Exception as e:
         fallbacks = {
-            "EPP": {"title_font":"Bodoni 72","title_size_pct":0.07,"title_color":"#111111",
-                    "title_position":"bottom","series_font":"Helvetica","series_size_pct":0.022,
+            "EPP": {"title_font":"LibreBodoni","title_size_pct":0.07,"title_color":"#111111",
+                    "title_position":"bottom","series_font":"Inter","series_size_pct":0.022,
                     "series_color":"#444444","text_shadow":False,
                     "reasoning":f"Default EPP layout (API unavailable: {e})"},
-            "rC":  {"title_font":"Impact","title_size_pct":0.09,"title_color":"#FFFFFF",
-                    "title_position":"bottom","series_font":"Helvetica","series_size_pct":0.025,
+            "rC":  {"title_font":"Anton","title_size_pct":0.09,"title_color":"#FFFFFF",
+                    "title_position":"bottom","series_font":"Inter","series_size_pct":0.025,
                     "series_color":"#FFFFFF","text_shadow":True,
                     "reasoning":f"Default rC layout (API unavailable: {e})"},
-            "SSC": {"title_font":"Palatino","title_size_pct":0.09,"title_color":"#FFFFFF",
-                    "title_position":"top","series_font":"Gill Sans","series_size_pct":0.022,
+            "SSC": {"title_font":"Lora","title_size_pct":0.09,"title_color":"#FFFFFF",
+                    "title_position":"top","series_font":"Cabin","series_size_pct":0.022,
                     "series_color":"#DDDDDD","text_shadow":True,
                     "reasoning":f"Default SSC layout (API unavailable: {e})"},
         }
@@ -360,7 +396,7 @@ def _draw_epp_badge(canvas, size, scale, logo, band_edge_y, position):
         d = ImageDraw.Draw(canvas)
         d.rectangle([box_x, box_y, box_x+box_w, box_y+box_h],
                     fill=(255,255,255), outline=(180,0,0), width=max(3,int(4*scale)))
-        f = get_font("Helvetica", int(box_h * 0.5))
+        f = get_font("Inter", int(box_h * 0.5))
         d.text((box_x+box_w//2, box_y+box_h//2), "EKONOMIC PROPAGANDA",
                fill=(180,0,0), font=f, anchor="mm")
         return box_y, box_y + box_h
@@ -400,10 +436,10 @@ def composite_epp(hero, size, logo, album_title, series_name, s, adj):
     # EPP label for overlay modes (integrated into strip, no badge box)
     epp_label_sz = max(12, int(42 * scale))
     try:
-        epp_label_font = get_font("Helvetica", epp_label_sz)
+        epp_label_font = get_font("Inter", epp_label_sz)
         epp_label_h = epp_label_font.getbbox("EKONOMIC PROPAGANDA")[3] - epp_label_font.getbbox("EKONOMIC PROPAGANDA")[1]
     except Exception:
-        epp_label_font = get_font("Helvetica", 14)
+        epp_label_font = get_font("Inter", 14)
         epp_label_h = 14
     epp_gap = int(18 * scale)
 
@@ -588,7 +624,7 @@ def composite_ssc(hero, size, logo, album_title, series_name, s, adj):
     title_font  = get_font(adj.get("title_font",  s["title_font"]),  title_sz)
     series_font = get_font(adj.get("series_font", s["series_font"]), series_sz)
     margin = int(80*scale)
-    label_font = get_font("Gill Sans", int(32*scale))
+    label_font = get_font("Cabin", int(32*scale))
     letter_spacing = int(adj.get("letter_spacing", 0) * scale)
     title_str_ssc  = album_title.upper() if adj.get("title_caps", False) else album_title
     series_str_ssc = series_name.upper() if adj.get("series_caps", False) else series_name
@@ -785,10 +821,10 @@ if st.session_state.selected_catalog:
             if "adj_seeded" not in st.session_state or st.session_state.get("adj_seeded_for") != id(s):
                 ai_tf = s.get("title_font", "Helvetica")
                 ai_sf = s.get("series_font", "Helvetica")
-                st.session_state["adj_title_font_v"]  = ai_tf if ai_tf in FONT_OPTIONS else "Helvetica"
+                st.session_state["adj_title_font_v"]  = ai_tf if ai_tf in FONT_OPTIONS else "LibreBodoni"
                 st.session_state["adj_title_size_v"]  = int(s.get("title_size_pct", 0.08) * 3000)
                 st.session_state["adj_title_caps_v"]  = False
-                st.session_state["adj_series_font_v"] = ai_sf if ai_sf in FONT_OPTIONS else "Helvetica"
+                st.session_state["adj_series_font_v"] = ai_sf if ai_sf in FONT_OPTIONS else "Inter"
                 st.session_state["adj_series_caps_v"] = False  # OFF by default
                 st.session_state["adj_position_v"]    = s.get("title_position", "bottom")
                 st.session_state["adj_style_v"]       = "white_band"
